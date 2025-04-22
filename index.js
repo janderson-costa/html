@@ -14,6 +14,7 @@ function Component1(props) {
 	`;
 
 	function teste(e) {
+		//..
 		console.log(e, props.name);
 	}
 }
