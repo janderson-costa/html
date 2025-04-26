@@ -1,4 +1,4 @@
-function jsx(templateStrings, ...expressions) {
+function html(templateStrings, ...expressions) {
 	const placeholder = i => `{{__expr__${i}__}}`;
 	const html = templateStrings.reduce((acc, str, i) =>
 		acc + str + (i < expressions.length ? placeholder(i) : ''), '');
@@ -92,4 +92,4 @@ function render(container, component) {
 	container.appendChild(component); // Adiciona o componente ao container
 }
 
-export { jsx, render };
+export { html, render };
