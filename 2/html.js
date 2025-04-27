@@ -1,28 +1,76 @@
-function html(templateString, ...expressions) {
-	const html = templateString.reduce((acc, str, i) => acc + str + (i < expressions.length ? `{{__expr__${i}__}}` : ''), '');
-	const template = document.createElement('template');
+function convertTemplate(fnString) {
+	// Extrai o conteúdo entre os backticks (` `)
+	const templateMatch = fnString.toString().match(/`([\s\S]*)`/);
 
-	template.innerHTML = html.trim();
+	if (!templateMatch) return '';
+
+	let raw = templateMatch[1];
+
+	// Substitui todos os ${...} por {{__expr__N__}}
+	let exprIndex = 0;
+	raw = raw.replace(/\$\{[^}]+\}/g, () => `{{__expr__${exprIndex++}__}}`);
+
+	return raw;
+}
+
+function extractExpressions(fn) {
+	const fnString = fn.toString();
+
+	// Pega tudo entre os acentos graves (backticks)
+	const templateMatch = fnString.match(/`([\s\S]*)`/);
+	if (!templateMatch) return [];
+
+	const templateContent = templateMatch[1];
+
+	// Procura todas as expressões ${...}
+	const expressions = [];
+	const regex = /\$\{([^}]*)\}/g;
+	let match;
+	while ((match = regex.exec(templateContent)) !== null) {
+		expressions.push(match[1].trim());
+	}
+
+	console.log(expressions);
+
+	return expressions;
+}
+
+
+function html(templateFunction, props, a) {
+	console.log(a)
+	const template = document.createElement('template');
+	const _html = convertTemplate(templateFunction);
+	const expressions = extractExpressions(templateFunction)
+
+	/*
+		html:
+			<div>
+				<h1>{{__expr__0__}}</h1>
+				<button onclick="{{__expr__1__}}">OK!!</button>
+			</div>
+	*/
+
+	console.log(_html);
+
+	template.innerHTML = _html;
 
 	const children = Array.from(template.content.childNodes)
 		.map(parseNode)
 		.flat()
 		.filter(Boolean);
-	
-	let element = children.length === 1 ? children[0] : createElement(Fragment, null, ...children);
 
-	console.log(element);
+	let element = children.length === 1 ? children[0] : createElement(Fragment, null, ...children);
 
 	return element;
 
 
 	// FUNÇÕES
-	
+
 	function Fragment(_, ...children) {
 		const fragment = document.createDocumentFragment();
-	
+
 		children.forEach(child => fragment.append(child));
-	
+
 		return fragment;
 	}
 
@@ -30,7 +78,7 @@ function html(templateString, ...expressions) {
 		const element = typeof tag === 'function'
 			? tag(props)
 			: document.createElement(tag);
-	
+
 		for (const [name, value] of Object.entries(props || {})) {
 			if (name.startsWith('on') && typeof value === 'function') {
 				element.addEventListener(name.slice(2).toLowerCase(), value);
@@ -38,11 +86,11 @@ function html(templateString, ...expressions) {
 				element.setAttribute(name, value);
 			}
 		}
-	
+
 		children.flat().forEach(child =>
 			element.append(child instanceof Node ? child : document.createTextNode(child))
 		);
-	
+
 		return element;
 	}
 
@@ -63,7 +111,7 @@ function html(templateString, ...expressions) {
 			const match = part.match(/{{__expr__(\d+)__}}/);
 
 			if (match)
-				return expressions[parseInt(match[1])];
+				return eval(expressions[parseInt(match[1])]);
 
 			return part;
 		});
@@ -79,7 +127,7 @@ function html(templateString, ...expressions) {
 			const match = attr.value.match(/{{__expr__(\d+)__}}/);
 
 			props[attr.name] = match
-				? expressions[parseInt(match[1])]
+				? eval(expressions[parseInt(match[1])])
 				: attr.value;
 		}
 

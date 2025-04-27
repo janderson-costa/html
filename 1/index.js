@@ -5,8 +5,12 @@ const props = { name: 'Componente 1' };
 const comp1 = html/*html*/`
 	<div>
 		<h1>${props.name}</h1>
-		<button onClick=${() => console.log('OK!!')}>OK!!</button>
+		<button onClick="${event => myFunc(event)}">OK!!</button>
 	</div>
 `;
 
 render(document.body, comp1);
+
+function myFunc(event) {
+	console.log('myFunc!!', event);
+}
