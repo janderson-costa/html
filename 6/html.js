@@ -1,5 +1,6 @@
 export { bind, html };
 
+>>>>> manter o focu no elemento ao recriar o elemento
 // window.addEventListener('load', () => {
 // 	bind(html`<h1>Hello World!</h1>`, {});
 // });
@@ -10,35 +11,42 @@ function bind(htmlFunction, props) {
 	element.data = deepProxy(props, (target, prop, value) => {
 		// Cria um novo elemento e substitui o anterior
 		const newElement = bind(htmlFunction, props);
-		
-		console.log(props); <<<<<<<< está sendo chamado 2 x
 
 		element.replaceWith(newElement);
 		element = newElement;
+
+		return;
 	});
 
 	return element;
 
-	function deepProxy(obj, callback) {
-		// Captura alterações no objeto de forma recursiva.
+	function deepProxy(obj, callback, proxied = new WeakMap()) {
+		if (proxied.has(obj))
+			return proxied.get(obj);
 
-		return new Proxy(obj, {
+		const proxy = new Proxy(obj, {
 			get(target, prop, receiver) {
 				const value = Reflect.get(target, prop, receiver);
 
 				if (value && typeof value === 'object')
-					return deepProxy(value, callback);
+					return deepProxy(value, callback, proxied);
 
 				return value;
 			},
 			set(target, prop, value, receiver) {
+				const oldValue = target[prop];
 				const result = Reflect.set(target, prop, value, receiver);
 
-				callback(target, prop, value);
+				if (oldValue !== value)
+					callback(target, prop, value);
 
 				return result;
 			}
 		});
+
+		proxied.set(obj, proxy);
+
+		return proxy;
 	}
 }
 
@@ -94,17 +102,16 @@ function html(templateString, ...expressions) {
 					const valueOrPropExpr = child.outerHTML.match(/{[^}]+}/g); // Ex.: {index}, {value}, {item.name}, etc.
 					let html = child.outerHTML;
 
-					valueOrPropExpr.forEach(prop => {
-						const regex = new RegExp(prop, 'g');
+					valueOrPropExpr.forEach(expr => {
+						const regex = new RegExp(expr, 'g');
 						let value = '';
 
-						if (prop == '{index}') {
+						if (expr == '{index}') {
 							value = index;
 						} else {
 							if (typeof item == 'object') {
-								value = eval(
-									prop.replace(/{|}/g, '').replace(/^[^.]+/, 'item') // Ex.: {prop.name} => item.name
-								);
+								expr = expr.replace(/{|}/g, '').replace(/^[^.]+/, 'item') // Ex.: {prop.name} => item.name
+								value = eval(expr);
 							} else {
 								value = item;
 							}

@@ -21,19 +21,21 @@ const comp1 = bind(() => html`
 				{value}
 			</label>
 		</div>
-		<span>
-			<span>
-				<span>
-					<button onClick="${(event) => console.log(event)}">Test</button>
-					<button onClick="${() => comp1.data.Componente1.items.push({ name: comp1.data.Componente1.name })}">Add</button>
-					<button onClick="${() => comp1.data.Componente1.items.pop(1)}">Remove</button>
-					<input type="text" value="${props.Componente1.name}" onKeyup="${event => comp1.data.Componente1.name = event.target.value}" />
-					<li for="item of ${items}">
-						{index} - {item.name}
-					</li>
-				</span>
-			</span>
-		</span>
+		<div style="display: inline-flex; flex-direction: column; gap: 8px;">
+			<div style="display: inline-flex; gap: 8px;">
+				<button onClick="${(event) => console.log(event)}">Test</button>
+				<button onClick="${() => {
+					let item = { name: comp1.data.Componente1.name };
+
+					comp1.data.Componente1.items.push(item);
+				}}">Add</button>
+				<button onClick="${() => comp1.data.Componente1.items.pop(1)}">Remove</button>
+			</div>
+			<input type="text" value="${props.Componente1.name}" onKeyup="${event => comp1.data.Componente1.name = event.target.value}" />
+			<li for="item of ${props.Componente1.items}">
+				{index} - {item.name}
+			</li>
+		</div>
 		<h3>${props.Componente1.name}</h3>
 	</div>
 `, props);
@@ -52,16 +54,13 @@ const comp1 = bind(() => html`
 document.body.appendChild(comp1);
 //document.body.appendChild(comp2);
 
-// comp1.data.Componente1.name = 'Componente Um!!';
-// comp1.data.Componente1.items = [1, 2, 3];
+//comp1.data.Componente1.name = 'Componente Um!!';
+// comp1.data.Componente1.items = [
+// 	{ name: 'Item 1' },
+// 	{ name: 'Item 2' },
+// 	{ name: 'Item 3' },
+// ];
 
 function myFunc(event) {
 	console.log('myFunc!!', event || '');
 }
-
-
-// ${origens.map(name => /*html*/`
-// 	<label>
-// 		<input type="radio" name="origem" value="${name}" onChange="${() => console.log('radio')}">${name}
-// 	</label>
-// `).join('')}
