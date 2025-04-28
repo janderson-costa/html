@@ -7,36 +7,39 @@ const items = [
 	{ name: 'Fone' },
 ];
 const props = {
-	Componente1: { name: 'Componente 1', items: items, origem: ''},
+	Componente1: { name: 'Componente 1', items: items, origemRadio: 'E-Mail', origemCheckbox: ['Correio', 'Fone']},
 	Componente2: { name: 'Componente 2', items: items },
 };
 
 // ! Exemplo 1: Vinculando ao objeto props
 const comp1 = bind(() => html`
-	<div name="${props.Componente1.name}">
+	<div name="${props.Componente1.name}" style="display: inline-flex; flex-direction: column; gap: 8px;">
 		<h1>${props.Componente1.name}</h1>
-		<div style="display: flex; gap: 8px; padding: 8px 0px;">
+		<div>
 			<label for="value of ${origens}">
-				<input type="radio" name="origem" value="{value}" onChange="${event => comp1.data.Componente1.name = event.target.value}">
+				<input type="radio" name="origemRadio" value="{value}" value-selected="${props.Componente1.origemRadio}" onChange="${event => comp1.data.Componente1.origemRadio = event.target.value}">
 				{value}
 			</label>
 		</div>
-		<div style="display: inline-flex; flex-direction: column; gap: 8px;">
-			<div style="display: inline-flex; gap: 8px;">
-				<button onClick="${(event) => console.log(event)}">Test</button>
-				<button onClick="${() => {
-					let item = { name: comp1.data.Componente1.name };
-
-					comp1.data.Componente1.items.push(item);
-				}}">Add</button>
-				<button onClick="${() => comp1.data.Componente1.items.pop(1)}">Remove</button>
-			</div>
-			<input type="text" value="${props.Componente1.name}" onKeyup="${event => comp1.data.Componente1.name = event.target.value}" />
-			<li for="item of ${props.Componente1.items}">
-				{index} - {item.name}
-			</li>
+		<div>
+			<label for="value of ${origens}">
+				<input type="checkbox" name="origemCheckbox" value="{value}" value-selected="${props.Componente1.origemCheckbox}" onChange="${event => comp1.data.Componente1.origemCheckbox = event.target.value}">
+				{value}
+			</label>
 		</div>
-		<h3>${props.Componente1.name}</h3>
+		<div>
+			<button onClick="${(event) => console.log(event)}">Test</button>
+			<button onClick="${() => {
+				let item = { name: comp1.data.Componente1.name };
+
+				comp1.data.Componente1.items.push(item);
+			}}">Add</button>
+			<button onClick="${() => comp1.data.Componente1.items.pop(1)}">Remove</button>
+		</div>
+		<input type="text" value="${props.Componente1.name}" onKeyup="${event => comp1.data.Componente1.name = event.target.value}" />
+		<li for="item of ${props.Componente1.items}">
+			{index} - {item.name}
+		</li>
 	</div>
 `, props);
 
@@ -64,3 +67,5 @@ document.body.appendChild(comp1);
 function myFunc(event) {
 	console.log('myFunc!!', event || '');
 }
+
+//eval="'{value}' == '${props.Componente1.origem}' ? 'checked' : ''"
