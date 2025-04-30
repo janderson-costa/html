@@ -16,33 +16,26 @@ const comp1 = bind(() => html`
 	<div name="${props.Componente1.name}" style="display: inline-flex; flex-direction: column; gap: 8px;">
 		<h1>${props.Componente1.name}</h1>
 		<div>
-			<label for="value of ${origens}">
-				<input type="radio" name="origemRadio" value="{value}" value-selected="${props.Componente1.origemRadio}" onChange="${event =>
-					comp1.data.Componente1.origemRadio = event.target.value
-				}">{value}
+			<label @for="value of ${origens}">
+				<input type="radio" name="origemRadio" value="{value}" @data="${props.Componente1.origemRadio}">{value}
 			</label>
 		</div>
 		<div>
-			<label for="value of ${origens}">
-				<input type="checkbox" name="origemCheckbox" value="{value}" value-selected="${props.Componente1.origemCheckbox}" onChange="${event =>
-					event.target.checked ?
-						comp1.data.Componente1.origemCheckbox.push(event.target.value) :
-						comp1.data.Componente1.origemCheckbox.splice(comp1.data.Componente1.origemCheckbox.indexOf(event.target.value), 1)
-				}">{value}
+			<label @for="value of ${origens}">
+				<input type="checkbox" name="origemCheckbox" value="{value}" @data="${props.Componente1.origemCheckbox}">{value}
 			</label>
 		</div>
 		<div>
-			<button onClick="${(event) => console.log(event)}">Test</button>
-			<button onClick="${() => {
+			<button @onClick="${(event) => console.log(event)}">Test</button>
+			<button @onClick="${() => {
 				let item = { name: comp1.data.Componente1.name };
-
 				comp1.data.Componente1.items.push(item);
 			}}">Add</button>
-			<button onClick="${() => comp1.data.Componente1.items.pop(1)}">Remove</button>
+			<button @onClick="${() => comp1.data.Componente1.items.pop(1)}">Remove</button>
 		</div>
-		<input type="text" value="${props.Componente1.name}" onKeyup="${event => comp1.data.Componente1.name = event.target.value}" />
-		<textarea>${props.Componente1.name}</textarea>
-		<li for="item of ${props.Componente1.items}">
+		<input type="text" @data="${props.Componente1.name}"/>
+		<textarea @data="${props.Componente1.name}"></textarea>
+		<li @for="item of ${props.Componente1.items}">
 			{index} - {item.name}
 		</li>
 	</div>
