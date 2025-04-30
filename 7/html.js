@@ -8,24 +8,28 @@ window.addEventListener('click', event => {
 	temp = event.target;
 });
 
+let _props;
+let _htmlFunction;
 let _templateString;
 let _expressions;
+let _component;
 
-function bind(htmlFunction, props) {
-	let element = htmlFunction(props);
+function bind(htmlFunction) {
+	_htmlFunction = htmlFunction;
+	_component = _htmlFunction();
 
-	element.data = deepProxy(props, (target, prop, value, receiver) => {
-		// Cria um novo elemento e substitui o anterior
-		const newElement = bind(htmlFunction, props);
+	// _component.data = deepProxy(_props, (target, prop, value, receiver) => {
+	// 	// Cria um novo elemento e substitui o anterior
+	// 	const newElement = bind(htmlFunction, props);
 
-		setComponent(newElement);
-		element.replaceWith(newElement);
-		element = newElement;
+	// 	setComponent(newElement);
+	// 	_component.replaceWith(newElement);
+	// 	_component = newElement;
 
-		return;
-	});
+	// 	return;
+	// });
 
-	return element;
+	return _component;
 }
 
 function html(templateString, ...expressions) {
@@ -35,7 +39,7 @@ function html(templateString, ...expressions) {
 	const html = parseTemplateString();
 	const element = createElement(html);
 
-	createForElements(element);
+	//createForElements(element);
 	//setElement(element);
 	setComponent(element);
 
@@ -79,9 +83,8 @@ function parseTemplateString() {
 
 		let expression = _expressions[i - 1];
 		let isFunction = typeof expression == 'function';
-		let isFor = htmlParts[i - 1].match(/@for=/);
 		let isData = htmlParts[i - 1].match(/@data=/);
-		let html = acc + (isFunction || isFor || isData ? i - 1 : expression) + cur;
+		let html = acc + (isFunction || isData ? i - 1 : expression) + cur;
 
 		return html;
 	}, '');
@@ -119,7 +122,7 @@ function createForElements(element) {
 					value = index;
 				} else {
 					if (typeof item == 'object') {
-						expr = expr.replace(/{|}/g, '').replace(/^[^.]+/, 'item') // Ex.: {prop.name} => item.name
+						expr = expr.replace(/{|}/g, '').replace(/^[^.]+/, 'item'); // Ex.: {prop.name} => item.name
 						value = eval(expr);
 					} else {
 						value = item;
@@ -153,6 +156,16 @@ function createForElements(element) {
 // 	});
 // }
 
+function recreate() {
+	// Recria um novo componente e substitui o anterior.
+
+	const newComponent = _htmlFunction();
+
+	setComponent(newComponent);
+	_component.replaceWith(newComponent);
+	_component = newComponent;
+}
+
 function setComponent(element) {
 	// Configura o componente e todos os seus elementos.
 
@@ -166,30 +179,48 @@ function setComponent(element) {
 	});
 
 	function set(child) {
-		Array.from(child.attributes).forEach(attr => {
-			if (attr.name == '@data') {
-				child.expressionIndex = attr.value;
-				setEvent(child);
-			}
+		const data_index = child.getAttribute('@data');
+		const prop_name = child.getAttribute('@prop');
+		const on_events = child.getAttributeNames().filter(x => x.startsWith('@on'));
 
-			// Eventos
-			if (attr.name.startsWith('@on')) {
-				// const eventName = attr.name.slice(2).toLowerCase();
+		child.removeAttribute('@data');
+		child.removeAttribute('@prop');
 
-				// child.expressionIndex = attr.value;
-				// child.removeAttribute(attr.name);
-				// child.addEventListener(eventName, onEvent);
-			}
-		});
+		if (data_index) {
+			const expression = _expressions[data_index];
+
+			child.value = expression[prop_name];
+			setEvent(child, expression, prop_name);
+		}
+
+		if (on_events.length) {
+			console.log(on_events);
+		}
 	}
 
-	function setEvent(child) {
-		if (child.tagName == 'INPUT' || child.tagName == 'TEXTAREA' || child.tagName == 'SELECT') {
-			child.addEventListener('change', event => {
-				console.log(_expressions);
-				_expressions[child.expressionIndex] = event.target.value;
-			});
-		}
+	function setEvent(child, expression, prop) {
+		const onChange = child.getAttribute('@onChange');
+
+		child.addEventListener('change', event => {
+			expression[prop] = event.target.value;
+
+			if (onChange)
+				_expressions[onChange](event);
+
+			recreate();
+		});
+
+		child.removeAttribute('@onChange');
+	}
+
+	function setProxy(obj) {
+		return new Proxy(obj, {
+			set(target, prop, value) {
+				target[prop] = value;
+				renderFn(); // dispara re-render automático
+				return true;
+			}
+		});
 	}
 
 	function onEvent(event) {

@@ -12,7 +12,7 @@ let _templateString;
 let _expressions;
 
 function bind(htmlFunction, props) {
-	let element = htmlFunction(props);
+	let element = htmlFunction();
 
 	element.data = deepProxy(props, (target, prop, value, receiver) => {
 		// Cria um novo elemento e substitui o anterior

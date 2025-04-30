@@ -7,7 +7,7 @@ const items = [
 	{ name: 'Fone' },
 ];
 const props = {
-	Componente1: { name: 'Componente 1', items: items, origemRadio: 'E-Mail', origemCheckbox: ['Correio', 'Fone']},
+	Componente1: { name: 'Componente 1', items: items, color: 'Red', origemRadio: 'E-Mail', origemCheckbox: ['Correio', 'Fone']},
 	Componente2: { name: 'Componente 2', items: items },
 };
 
@@ -15,6 +15,7 @@ const props = {
 const comp1 = bind(() => html`
 	<div name="${props.Componente1.name}" style="display: inline-flex; flex-direction: column; gap: 8px;">
 		<h1>${props.Componente1.name}</h1>
+
 		<div>
 			<button @onClick="${(event) => console.log(event)}">Test</button>
 			<button @onClick="${() => {
@@ -23,10 +24,16 @@ const comp1 = bind(() => html`
 			}}">Add</button>
 			<button @onClick="${() => comp1.data.Componente1.items.pop(1)}">Remove</button>
 		</div>
-		<input type="text" @data="${props.Componente1.name}"/>
-		<textarea @data="${props.Componente1.name}"></textarea>
+
+		<input type="text" @data="${props.Componente1}" @prop="name" />
+
+		<textarea @data="${props.Componente1}" @prop="color" @onChange="${event => console.log(event, props.Componente1.color)}"></textarea>
+
+		<li @data="${props.Componente1.items}">
+ 			{index} - {item.name}
+ 		</li>
 	</div>
-`, props);
+`);
 
 // const comp1 = bind(() => html`
 // 	<div name="${props.Componente1.name}" style="display: inline-flex; flex-direction: column; gap: 8px;">
