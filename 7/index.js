@@ -16,16 +16,6 @@ const comp1 = bind(() => html`
 	<div name="${props.Componente1.name}" style="display: inline-flex; flex-direction: column; gap: 8px;">
 		<h1>${props.Componente1.name}</h1>
 		<div>
-			<label @for="value of ${origens}">
-				<input type="radio" name="origemRadio" value="{value}" @data="${props.Componente1.origemRadio}">{value}
-			</label>
-		</div>
-		<div>
-			<label @for="value of ${origens}">
-				<input type="checkbox" name="origemCheckbox" value="{value}" @data="${props.Componente1.origemCheckbox}">{value}
-			</label>
-		</div>
-		<div>
 			<button @onClick="${(event) => console.log(event)}">Test</button>
 			<button @onClick="${() => {
 				let item = { name: comp1.data.Componente1.name };
@@ -35,11 +25,37 @@ const comp1 = bind(() => html`
 		</div>
 		<input type="text" @data="${props.Componente1.name}"/>
 		<textarea @data="${props.Componente1.name}"></textarea>
-		<li @for="item of ${props.Componente1.items}">
-			{index} - {item.name}
-		</li>
 	</div>
 `, props);
+
+// const comp1 = bind(() => html`
+// 	<div name="${props.Componente1.name}" style="display: inline-flex; flex-direction: column; gap: 8px;">
+// 		<h1>${props.Componente1.name}</h1>
+// 		<div>
+// 			<label @for="value of ${origens}">
+// 				<input type="radio" name="origemRadio" value="{value}" @data="${props.Componente1.origemRadio}">{value}
+// 			</label>
+// 		</div>
+// 		<div>
+// 			<label @for="value of ${origens}">
+// 				<input type="checkbox" name="origemCheckbox" value="{value}" @data="${props.Componente1.origemCheckbox}">{value}
+// 			</label>
+// 		</div>
+// 		<div>
+// 			<button @onClick="${(event) => console.log(event)}">Test</button>
+// 			<button @onClick="${() => {
+// 				let item = { name: comp1.data.Componente1.name };
+// 				comp1.data.Componente1.items.push(item);
+// 			}}">Add</button>
+// 			<button @onClick="${() => comp1.data.Componente1.items.pop(1)}">Remove</button>
+// 		</div>
+// 		<input type="text" @data="${props.Componente1.name}"/>
+// 		<textarea @data="${props.Componente1.name}"></textarea>
+// 		<li @for="item of ${props.Componente1.items}">
+// 			{index} - {item.name}
+// 		</li>
+// 	</div>
+// `, props);
 
 // ! Exemplo 2: Desvinculado ao objeto props
 // const comp2 = html`

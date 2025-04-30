@@ -18,7 +18,7 @@ function bind(htmlFunction, props) {
 		// Cria um novo elemento e substitui o anterior
 		const newElement = bind(htmlFunction, props);
 
-		setElement(newElement);
+		setComponent(newElement);
 		element.replaceWith(newElement);
 		element = newElement;
 
@@ -36,8 +36,8 @@ function html(templateString, ...expressions) {
 	const element = createElement(html);
 
 	createForElements(element);
-	setElement(element);
-	setEvents(element);
+	//setElement(element);
+	setComponent(element);
 
 	return element;
 }
@@ -79,9 +79,9 @@ function parseTemplateString() {
 
 		let expression = _expressions[i - 1];
 		let isFunction = typeof expression == 'function';
-		let isFor = htmlParts[i - 1].match(/for=/);
-		let isValueSelected = htmlParts[i - 1].match(/value-selected=/);
-		let html = acc + (isFunction || isFor || isValueSelected ? i - 1 : expression) + cur;
+		let isFor = htmlParts[i - 1].match(/@for=/);
+		let isData = htmlParts[i - 1].match(/@data=/);
+		let html = acc + (isFunction || isFor || isData ? i - 1 : expression) + cur;
 
 		return html;
 	}, '');
@@ -140,21 +140,21 @@ function createForElements(element) {
 	});
 }
 
-function setElement(element) {
-	// value-selected
-	element.parentNode.querySelectorAll('[value-selected]').forEach(input => {
-		let selectedValue = _expressions[input.getAttribute('value-selected')];
+// function setElement(element) {
+// 	// value-selected
+// 	element.parentNode.querySelectorAll('[value-selected]').forEach(input => {
+// 		let selectedValue = _expressions[input.getAttribute('value-selected')];
 
-		if (input.type == 'radio') {
-			input.checked = input.value == selectedValue;
-		} else if (input.type == 'checkbox') {
-			input.checked = selectedValue.some(x => x == input.value);
-		}
-	});
-}
+// 		if (input.type == 'radio') {
+// 			input.checked = input.value == selectedValue;
+// 		} else if (input.type == 'checkbox') {
+// 			input.checked = selectedValue.some(x => x == input.value);
+// 		}
+// 	});
+// }
 
-function setEvents(element) {
-	// Percorre todos os elementos do pai de forma recursiva.
+function setComponent(element) {
+	// Configura o componente e todos os seus elementos.
 
 	set(element);
 
@@ -162,20 +162,34 @@ function setEvents(element) {
 		set(child);
 
 		if (child.children.length)
-			setEvents(child);
+			setComponent(child);
 	});
 
 	function set(child) {
 		Array.from(child.attributes).forEach(attr => {
-			// Eventos
-			if (attr.name.startsWith('on')) {
-				const eventName = attr.name.slice(2).toLowerCase();
-
+			if (attr.name == '@data') {
 				child.expressionIndex = attr.value;
-				child.removeAttribute(attr.name);
-				child.addEventListener(eventName, onEvent);
+				setEvent(child);
+			}
+
+			// Eventos
+			if (attr.name.startsWith('@on')) {
+				// const eventName = attr.name.slice(2).toLowerCase();
+
+				// child.expressionIndex = attr.value;
+				// child.removeAttribute(attr.name);
+				// child.addEventListener(eventName, onEvent);
 			}
 		});
+	}
+
+	function setEvent(child) {
+		if (child.tagName == 'INPUT' || child.tagName == 'TEXTAREA' || child.tagName == 'SELECT') {
+			child.addEventListener('change', event => {
+				console.log(_expressions);
+				_expressions[child.expressionIndex] = event.target.value;
+			});
+		}
 	}
 
 	function onEvent(event) {
