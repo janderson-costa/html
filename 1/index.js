@@ -2,7 +2,7 @@ import { html, render } from './html.js';
 
 const props = { name: 'Componente 1' };
 
-const comp1 = html/*html*/`
+const comp1 = html`
 	<div>
 		<h1>${props.name}</h1>
 		<button onClick="${event => myFunc(event)}">OK!!</button>

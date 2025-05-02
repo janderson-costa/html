@@ -12,23 +12,29 @@ const props = {
 };
 
 // ! Exemplo 1: Vinculando ao objeto props
-const comp1 = bind(() => html`
+const comp1 = html(() => html`
 	<div name="${props.Componente1.name}" style="display: inline-flex; flex-direction: column; gap: 8px;">
 		<h1>${props.Componente1.name}</h1>
 
+		<!-- Buttons -->
 		<div>
-			<button @onClick="${(event) => console.log(event)}">Test</button>
+			<button @onClick="${({ event }) => console.log(event)}">Test</button>
+			<button @onClick="${({ render }) => {
+				props.Componente1.name = new Date().toUTCString();
+				render();
+			}}">Change</button>
 			<button @onClick="${() => {
-				let item = { name: comp1.data.Componente1.name };
-				comp1.data.Componente1.items.push(item);
+				let item = { name: new Date().toUTCString() };
+				props.Componente1.items.push(item);
 			}}">Add</button>
-			<button @onClick="${() => comp1.data.Componente1.items.pop(1)}">Remove</button>
+			<button @onClick="${() => props.Componente1.items.pop(1)}">Remove</button>
 		</div>
 
+		<!-- Fields -->
 		<input type="text" @data="${props.Componente1}" @prop="name" />
+		<textarea @data="${props.Componente1}" @prop="color" @onChange="${({ event }) => console.log(event, props.Componente1.color)}"></textarea>
 
-		<textarea @data="${props.Componente1}" @prop="color" @onChange="${event => console.log(event, props.Componente1.color)}"></textarea>
-
+		<!-- Items -->
 		<li @data="${props.Componente1.items}">
  			{index} - {item.name}
  		</li>

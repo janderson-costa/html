@@ -39,9 +39,8 @@ function html(templateString, ...expressions) {
 	const html = parseTemplateString();
 	const element = createElement(html);
 
-	//createForElements(element);
-	//setElement(element);
 	setComponent(element);
+	//createForElements(element);
 
 	return element;
 }
@@ -181,36 +180,44 @@ function setComponent(element) {
 	function set(child) {
 		const data_index = child.getAttribute('@data');
 		const prop_name = child.getAttribute('@prop');
-		const on_events = child.getAttributeNames().filter(x => x.startsWith('@on'));
 
 		child.removeAttribute('@data');
 		child.removeAttribute('@prop');
 
+		// @data
 		if (data_index) {
-			const expression = _expressions[data_index];
+			const obj = _expressions[data_index];
+			const onChange = child.getAttribute('@onChange');
 
-			child.value = expression[prop_name];
-			setEvent(child, expression, prop_name);
-		}
+			child.value = obj[prop_name];
+			child.addEventListener('change', event => {
+				obj[prop_name] = event.target.value;
 
-		if (on_events.length) {
-			console.log(on_events);
-		}
-	}
+				if (onChange)
+					_expressions[onChange]({ event, render: recreate });
 
-	function setEvent(child, expression, prop) {
-		const onChange = child.getAttribute('@onChange');
-
-		child.addEventListener('change', event => {
-			expression[prop] = event.target.value;
+				recreate();
+			});
 
 			if (onChange)
-				_expressions[onChange](event);
+				child.removeAttribute('@onChange');
+		}
 
-			recreate();
+		Array.from(child.attributes).forEach(attr => {
+			const attrName = attr.name.toLowerCase();
+
+			// @onEvent
+			if (attrName.startsWith('@on')) {
+				const func = _expressions[attr.value];
+				const _attrName = attrName.substring(3); // @onclick => click, @onchange => change, ...
+
+				child.addEventListener(_attrName, event => {
+					func({ event, render: recreate });
+				});
+
+				child.removeAttribute(attrName);
+			}
 		});
-
-		child.removeAttribute('@onChange');
 	}
 
 	function setProxy(obj) {
