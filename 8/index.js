@@ -54,6 +54,6 @@ document.body.appendChild(comp1);
 // 	html`<li @onClick="${e => console.log(e.element)}">${ index + ' - ' + item.name}</li>`.outerHTML
 // ).join('')}
 
-{/* <label @for="${props.Componente1.items}">
-	<input type="checkbox" name="checkboxOrigem" @onChange="${e => e.item.checked = e.element.checked}">{item.name}
-</label> */}
+// {/* <label @for="${props.Componente1.items}">
+// 	<input type="checkbox" name="checkboxOrigem" @onChange="${e => e.item.checked = e.element.checked}">{item.name}
+// </label> */}
