@@ -30,9 +30,6 @@ function html(templateString, ...expressions) {
 
 		setComponent(component);
 
-		// Público
-		component.reload = reload;
-
 		return component;
 	}
 
@@ -46,7 +43,7 @@ function html(templateString, ...expressions) {
 				return cur;
 
 			const index = i - 1;
-			const part = compressTemplateString(htmlParts[i - 1]);
+			const part = compressTemplateString(htmlParts[index]);
 			const onEventRegex = /@on[a-zA-Z0-9]*="$/; // Termina com @on<eventName>="
 
 			let expression = _expressions[index];
@@ -58,9 +55,8 @@ function html(templateString, ...expressions) {
 				isFunction = false;
 				expression = expression();
 
-				if (isElement(expression)) {
+				if (isElement(expression))
 					expression = `<function>${index}</function>`;
-				}
 			}
 
 			let html = acc + (isFunction ? index : expression) + cur;
@@ -119,6 +115,8 @@ function html(templateString, ...expressions) {
 		});
 
 		function set(element) {
+			element.reload = reload; // Público
+
 			Array.from(element.attributes).forEach(attr => {
 				const attrName = attr.name.toLowerCase();
 
