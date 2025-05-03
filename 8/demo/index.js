@@ -23,8 +23,6 @@ const select = html`
 	)}</select>
 `;
 
-window.component1 = component1;
-
 
 // ! Exemplo
 const comp1 = html`
