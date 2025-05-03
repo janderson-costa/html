@@ -56,14 +56,14 @@ function html(templateString, ...expressions) {
 			}
 
 			return (acc + (isFunction ? index : expression) + cur)
-				.replaceAll('selected="true"', 'selected')
-				.replaceAll('selected="false"', '')
-				.replaceAll('checked="true"', 'checked')
-				.replaceAll('checked="false"', '')
 				.replaceAll('readonly="true"', 'readonly')
 				.replaceAll('readonly="false"', '')
 				.replaceAll('disabled="true"', 'disabled')
-				.replaceAll('disabled="false"', '');
+				.replaceAll('disabled="false"', '')
+				.replaceAll('selected="true"', 'selected')
+				.replaceAll('selected="false"', '')
+				.replaceAll('checked="true"', 'checked')
+				.replaceAll('checked="false"', '');
 		}, '');
 
 		return html;
@@ -92,7 +92,7 @@ function html(templateString, ...expressions) {
 
 		elements.forEach(element => {
 			const expression = _expressions[element.textContent];
-			const result = element.tagName == 'FUNCTION' ? expression() : expression;
+			const result = element.tagName.toLowerCase() == 'function' ? expression() : expression;
 			const children = result instanceof Array ? result : [result];
 
 			children.forEach((child, index) => {
