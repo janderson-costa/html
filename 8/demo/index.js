@@ -12,6 +12,7 @@ const component1 = {
 	color: 'Blue',
 	colors: ['Blue', 'Green'],
 	items: ['Item 1', 'Item 3'],
+	readonly: true,
 	disabled: true,
 };
 const select = html`
@@ -45,15 +46,31 @@ const comp1 = html`
 				}}">Remove</button>
 			</div>
 
-			<input type="text" value="${() => component1.name}" @onChange="${e => {
-				component1.name = e.element.value;
-				e.reload();
-			}}" />
+			<div>
+				<b>Name</b>
+				<input type="text" value="${() => component1.name}" @onChange="${e => {
+					component1.name = e.element.value;
+					e.reload();
+				}}" />
+			</div>
 
-			<textarea rows="5" @onChange="${e => {
-				component1.color = e.element.value;
-				e.reload();
-			}}">${() => component1.color}</textarea>
+			<div>
+				<b>Name (ReadOnly)</b>
+				<input type="text" value="${() => component1.name}" readonly="${() => component1.readonly}" />
+			</div>
+
+			<div>
+				<b>Name</b>
+				<textarea rows="2" @onChange="${e => {
+					component1.name = e.element.value;
+					e.reload();
+				}}">${() => component1.name}</textarea>
+			</div>
+
+			<div>
+				<b>Name (Disabled)</b>
+				<textarea rows="2" disabled="${() => component1.disabled}">${() => component1.name}</textarea>
+			</div>
 
 			${select}
 			${select.cloneNode(true)}
@@ -72,7 +89,7 @@ const comp1 = html`
 			`)}
 
 			<div>
-				<div class="${() => component1.disabled ? 'html-disabled' : ''}">
+				<div class="${() => component1.disabled ? 'disabled' : ''}">
 					${() => colors.map(color => html`
 						<label>
 							<input type="checkbox" name="checkboxColor" checked="${component1.colors.some(x => x == color)}" @onChange="${e => {

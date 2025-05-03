@@ -60,6 +60,8 @@ function html(templateString, ...expressions) {
 				.replaceAll('selected="false"', '')
 				.replaceAll('checked="true"', 'checked')
 				.replaceAll('checked="false"', '')
+				.replaceAll('readonly="true"', 'readonly')
+				.replaceAll('readonly="false"', '')
 				.replaceAll('disabled="true"', 'disabled')
 				.replaceAll('disabled="false"', '');
 		}, '');
@@ -259,7 +261,7 @@ function _setHtmlStyle() {
 
 	document.querySelector('head').appendChild(html`
 		<style id="html-style">
-			.html-disabled {
+			.disabled {
 				opacity: .6;
 				-webkit-user-select: none;
 				-moz-user-select: none;
