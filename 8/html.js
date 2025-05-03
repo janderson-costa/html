@@ -1,17 +1,12 @@
-export { html };
+export { html, css };
 
-//! >>>>> manter o focus no elemento ao recriar o elemento
-let temp;
-
-window.addEventListener('click', event => {
-	//console.log(event.target);
-	temp = event.target;
-});
+_setHtmlStyle();
 
 function html(templateString, ...expressions) {
 	let _templateString = templateString;
 	let _expressions = expressions;
 	let _component = createComponent();
+	let _xPath;
 
 	return _component;
 
@@ -22,6 +17,7 @@ function html(templateString, ...expressions) {
 
 		_component.replaceWith(newComponent);
 		_component = newComponent;
+		focus();
 	}
 
 	function createComponent() {
@@ -59,15 +55,13 @@ function html(templateString, ...expressions) {
 					expression = `<function>${index}</function>`;
 			}
 
-			let html = acc + (isFunction ? index : expression) + cur;
-
-			html = html
+			return (acc + (isFunction ? index : expression) + cur)
 				.replaceAll('selected="true"', 'selected')
 				.replaceAll('selected="false"', '')
 				.replaceAll('checked="true"', 'checked')
-				.replaceAll('checked="false"', '');
-
-			return html;
+				.replaceAll('checked="false"', '')
+				.replaceAll('disabled="true"', 'disabled')
+				.replaceAll('disabled="false"', '');
 		}, '');
 
 		return html;
@@ -77,15 +71,16 @@ function html(templateString, ...expressions) {
 		}
 
 		function isElement(any) {
-			return any instanceof HTMLElement || any[0] instanceof HTMLElement;
+			return any instanceof Element || any[0] instanceof Element;
 		}
 	}
 
 	function createElement(html) {
-		const parser = new DOMParser();
-		const doc = parser.parseFromString(html, 'text/html');
+		const template = document.createElement('template');
 
-		return doc.body.firstChild;
+		template.innerHTML = html.trim();
+
+		return template.content.firstChild;
 	}
 
 	function setComponent(element) {
@@ -94,8 +89,9 @@ function html(templateString, ...expressions) {
 		const elements = element.querySelectorAll('element, function');
 
 		elements.forEach(element => {
-			const expression = element.tagName == 'FUNCTION' ? _expressions[element.textContent]() : _expressions[element.textContent];
-			const children = expression instanceof Array ? expression : [expression];
+			const expression = _expressions[element.textContent];
+			const result = element.tagName == 'FUNCTION' ? expression() : expression;
+			const children = result instanceof Array ? result : [result];
 
 			children.forEach((child, index) => {
 				element.before(child);
@@ -115,7 +111,7 @@ function html(templateString, ...expressions) {
 		});
 
 		function set(element) {
-			element.reload = reload; // Público
+			setPublicProperties(element);
 
 			Array.from(element.attributes).forEach(attr => {
 				const attrName = attr.name.toLowerCase();
@@ -125,13 +121,151 @@ function html(templateString, ...expressions) {
 					const func = _expressions[attr.value];
 					const _attrName = attrName.substring(3);
 
-					element.addEventListener(_attrName, event =>
-						func({ event, element: event.target, reload })
-					);
+					element.addEventListener(_attrName, event => {
+						_xPath = _getXPath(event.target);
+						func({ event, element: event.target, reload });
+					});
 
 					element.removeAttribute(attrName);
 				}
 			});
 		}
 	}
+
+	function setPublicProperties(element) {
+		element.reload = reload;
+		element.css = style => css(element, style);
+	}
+
+	function focus() {
+		const element = _getElementByXPath(_xPath);
+		const tagName = element.tagName.toLowerCase();
+		const type = element.type;
+
+		if (element && !(
+			tagName == 'textarea' ||
+			type.match(/text|number|password|email|url|search|tel/)
+		)) element.focus();
+	}
+
+
+	// INTERNO
+
+	function _getElementByXPath(xpath) {
+		if (!xpath)
+			return null;
+
+		return document.evaluate(
+			xpath,
+			document,
+			null,
+			XPathResult.FIRST_ORDERED_NODE_TYPE,
+			null
+		).singleNodeValue;
+	}
+
+	function _getXPath(element) {
+		if (!(element instanceof Element))
+			return null;
+
+		const parts = [];
+
+		while (element && element.nodeType === Node.ELEMENT_NODE) {
+			let index = 1;
+			let sibling = element.previousElementSibling;
+
+			while (sibling) {
+				if (sibling.nodeName === element.nodeName)
+					index++;
+
+				sibling = sibling.previousElementSibling;
+			}
+
+			const tagName = element.nodeName.toLowerCase();
+			const part = `${tagName}[${index}]`;
+
+			parts.unshift(part);
+			element = element.parentNode;
+		}
+
+		return `/${parts.join('/')}`;
+	}
+}
+
+function css(element, style = {}) {
+	const pxProps = new Set([
+		'borderBottomLeftRadius',
+		'borderBottomRightRadius',
+		'borderBottomWidth',
+		'borderLeftWidth',
+		'borderRadius',
+		'borderRightWidth',
+		'borderTopLeftRadius',
+		'borderTopRightRadius',
+		'borderTopWidth',
+		'borderWidth',
+		'bottom',
+		'columnGap',
+		'fontSize',
+		'gap',
+		'height',
+		'left',
+		'letterSpacing',
+		'lineHeight',
+		'margin',
+		'marginBottom',
+		'marginLeft',
+		'marginRight',
+		'marginTop',
+		'maxHeight',
+		'maxWidth',
+		'minHeight',
+		'minWidth',
+		'outlineWidth',
+		'padding',
+		'paddingBottom',
+		'paddingLeft',
+		'paddingRight',
+		'paddingTop',
+		'right',
+		'rowGap',
+		'top',
+		'translateX',
+		'translateY',
+		'translateZ',
+		'width',
+	]);
+
+	const processedStyle = {};
+
+	for (const [prop, value] of Object.entries(style)) {
+		// Se o valor for um número, adiciona 'px' no final
+		if (pxProps.has(prop) && typeof value == 'number') {
+			processedStyle[prop] = `${value}px`;
+		} else {
+			processedStyle[prop] = value;
+		}
+	}
+
+	Object.assign(element.style, processedStyle);
+}
+
+
+// INTERNO
+
+function _setHtmlStyle() {
+	if (document.querySelector('style#html-style'))
+		return;
+
+	document.querySelector('head').appendChild(html`
+		<style id="html-style">
+			.html-disabled {
+				opacity: .6;
+				-webkit-user-select: none;
+				-moz-user-select: none;
+				user-select: none;
+				pointer-events: none;
+			}
+		</style>
+	`);
 }

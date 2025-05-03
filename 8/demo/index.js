@@ -1,4 +1,4 @@
-import { html } from './html.js';
+import { html, css } from '../html.js';
 
 const list = ['Item 1', 'Item 2', 'Item 3'];
 const items = [
@@ -12,9 +12,13 @@ const component1 = {
 	color: 'Blue',
 	colors: ['Blue', 'Green'],
 	items: ['Item 1', 'Item 3'],
+	disabled: true,
 };
 const select = html`
-	<select @onChange="${e => component1.color = e.element.value}">${() => colors.map((color, index) =>
+	<select @onChange="${e => {
+		component1.color = e.element.value;
+		e.reload();
+	}}">${() => colors.map((color, index) =>
 		html`<option type="checkbox" selected="${component1.color == color}">${color}</option>`
 	)}</select>
 `;
@@ -56,7 +60,7 @@ const comp1 = html`
 			${select}
 			${select.cloneNode(true)}
 
-			${() => items.map((item, index) => html`
+			${() => items.map(item => html`
 				<label>
 					<input type="checkbox" name="checkboxOrigem" checked="${component1.items.some(x => x == item.name)}" @onChange="${e => {
 						if (e.element.checked)
@@ -70,35 +74,43 @@ const comp1 = html`
 			`)}
 
 			<div>
-			${() => colors.map((color, index) => html`
-				<label>
-					<input type="checkbox" name="checkboxColor" checked="${component1.colors.some(x => x == color)}" @onChange="${e => {
-						if (e.element.checked)
-							component1.colors.push(color);
-						else
-							component1.colors = component1.colors.filter(x => x != color);
-
-						e.element.reload(); // opcional
-					}}">${color}
-				</label>
-			`)}
+				<div class="${() => component1.disabled ? 'html-disabled' : ''}">
+					${() => colors.map(color => html`
+						<label>
+							<input type="checkbox" name="checkboxColor" checked="${component1.colors.some(x => x == color)}" @onChange="${e => {
+								if (e.element.checked)
+									component1.colors.push(color);
+								else
+									component1.colors = component1.colors.filter(x => x != color);
+							}}">${color}
+						</label>
+					`)}
+				</div>
+				<button @onClick="${e => {
+					component1.disabled = false;
+					e.reload();
+				}}">Enable</button>
 			</div>
 
-			${colors.map((color, index) => html`
+			${colors.map(color => html`
 				<label>
 					<input type="radio" name="radioColor" value="${color}" checked="${component1.color == color}" @onChange="${e => {
 						component1.color = e.element.value;
-						e.element.reload();
 					}}">${color}
 				</label>
 			`)}
 
 			${() => list.map((item, index) => html`
-				<li>${item}</li>
+				<li>${(index + 1) + ' - ' + item}</li>
 			`)}
 		</div>
 	</div>
 `;
+
+// CSS - Exemplo de uso
+comp1.querySelectorAll('button')[3].css({ color: 'red' }); // Para elementos gerados pela lib
+select.css({ color: 'blue' });
+css(comp1.querySelector('h1'), { color: 'blue' }); // Para qualquer elemento
 
 document.body.appendChild(comp1);
 console.log(comp1);
