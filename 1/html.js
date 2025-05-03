@@ -1,100 +1,273 @@
+export { html, css };
+
+_setHtmlStyle();
+
 function html(templateString, ...expressions) {
-	const html = templateString.reduce((acc, str, i) => acc + str + (i < expressions.length ? `{{__expr__${i}__}}` : ''), '');
-	const template = document.createElement('template');
+	let _templateString = templateString;
+	let _expressions = expressions;
+	let _component = createComponent();
+	let _xPath;
 
-	template.innerHTML = html.trim();
+	return _component;
 
-	const children = Array.from(template.content.childNodes)
-		.map(parseNode)
-		.flat()
-		.filter(Boolean);
-	
-	let element = children.length === 1 ? children[0] : createElement(Fragment, null, ...children);
+	function reload() {
+		// Recria um novo componente e substitui o anterior.
 
-	console.log(element);
+		const newComponent = createComponent();
 
-	return element;
-
-
-	// FUNÇÕES
-	
-	function Fragment(_, ...children) {
-		const fragment = document.createDocumentFragment();
-	
-		children.forEach(child => fragment.append(child));
-	
-		return fragment;
+		_component.replaceWith(newComponent);
+		_component = newComponent;
+		focus();
 	}
 
-	function createElement(tag, props, ...children) {
-		const element = typeof tag === 'function'
-			? tag(props)
-			: document.createElement(tag);
-	
-		for (const [name, value] of Object.entries(props || {})) {
-			if (name.startsWith('on') && typeof value === 'function') {
-				element.addEventListener(name.slice(2).toLowerCase(), value);
-			} else {
-				element.setAttribute(name, value);
+	function createComponent() {
+		const html = parseTemplateString();
+		const component = createElement(html);
+
+		setComponent(component);
+
+		return component;
+	}
+
+	function parseTemplateString() {
+		const htmlParts = _templateString;
+		const html = htmlParts.reduce((acc, cur, i) => {
+			acc = compressTemplateString(acc);
+			cur = compressTemplateString(cur);
+
+			if (i == 0)
+				return cur;
+
+			const index = i - 1;
+			const part = compressTemplateString(htmlParts[index]);
+			const onEventRegex = /@on[a-zA-Z0-9]*="$/; // Termina com @on<eventName>="
+
+			let expression = _expressions[index];
+			let isFunction = typeof expression == 'function';
+
+			if (isElement(expression)) {
+				expression = `<element>${index}</element>`;
+			} else if (isFunction && (part.endsWith('>') || !onEventRegex.test(part))) {
+				isFunction = false;
+				expression = expression();
+
+				if (isElement(expression))
+					expression = `<function>${index}</function>`;
 			}
+
+			return (acc + (isFunction ? index : expression) + cur)
+				.replaceAll('selected="true"', 'selected')
+				.replaceAll('selected="false"', '')
+				.replaceAll('checked="true"', 'checked')
+				.replaceAll('checked="false"', '')
+				.replaceAll('readonly="true"', 'readonly')
+				.replaceAll('readonly="false"', '')
+				.replaceAll('disabled="true"', 'disabled')
+				.replaceAll('disabled="false"', '');
+		}, '');
+
+		return html;
+
+		function compressTemplateString(text) {
+			return typeof text == 'string' ? text.replace(/\n|\t/g, '').trim() : '';
 		}
-	
-		children.flat().forEach(child =>
-			element.append(child instanceof Node ? child : document.createTextNode(child))
-		);
-	
-		return element;
+
+		function isElement(any) {
+			return any instanceof Element || any[0] instanceof Element;
+		}
 	}
 
-	function parseNode(node) {
-		if (node.nodeType === Node.TEXT_NODE) {
-			return parseTextNode(node.nodeValue);
-		}
+	function createElement(html) {
+		const template = document.createElement('template');
 
-		if (node.nodeType === Node.ELEMENT_NODE) {
-			return parseElementNode(node);
-		}
+		template.innerHTML = html.trim();
 
-		return null;
+		return template.content.firstChild;
 	}
 
-	function parseTextNode(text) {
-		const parts = text.split(/({{__expr__\d+__}})/g).map(part => {
-			const match = part.match(/{{__expr__(\d+)__}}/);
+	function setComponent(element) {
+		// Configura o componente e todos os seus elementos.
 
-			if (match)
-				return expressions[parseInt(match[1])];
+		const elements = element.querySelectorAll('element, function');
 
-			return part;
+		elements.forEach(element => {
+			const expression = _expressions[element.textContent];
+			const result = element.tagName == 'FUNCTION' ? expression() : expression;
+			const children = result instanceof Array ? result : [result];
+
+			children.forEach((child, index) => {
+				element.before(child);
+
+				if (index == children.length - 1)
+					element.remove();
+			});
 		});
 
-		return parts.length === 1 ? parts[0] : parts.map(p => p instanceof Node ? p : document.createTextNode(p));
+		set(element);
+
+		Array.from(element.children).forEach(child => {
+			set(child);
+
+			if (child.children.length)
+				setComponent(child);
+		});
+
+		function set(element) {
+			setPublicProperties(element);
+
+			Array.from(element.attributes).forEach(attr => {
+				const attrName = attr.name.toLowerCase();
+
+				// @onEvent
+				if (attrName.startsWith('@on')) {
+					const func = _expressions[attr.value];
+					const _attrName = attrName.substring(3);
+
+					element.addEventListener(_attrName, event => {
+						_xPath = _getXPath(event.target);
+						func({ event, element: event.target, reload });
+					});
+
+					element.removeAttribute(attrName);
+				}
+			});
+		}
 	}
 
-	function parseElementNode(node) {
-		const tag = node.tagName.toLowerCase();
-		const props = {};
+	function setPublicProperties(element) {
+		element.reload = reload;
+		element.css = style => css(element, style);
+	}
 
-		for (const attr of node.attributes) {
-			const match = attr.value.match(/{{__expr__(\d+)__}}/);
+	function focus() {
+		const element = _getElementByXPath(_xPath);
+		const tagName = element.tagName.toLowerCase();
+		const type = element.type;
 
-			props[attr.name] = match
-				? expressions[parseInt(match[1])]
-				: attr.value;
+		if (element && !(
+			tagName == 'textarea' ||
+			type.match(/text|number|password|email|url|search|tel/)
+		)) element.focus();
+	}
+
+
+	// INTERNO
+
+	function _getElementByXPath(xpath) {
+		if (!xpath)
+			return null;
+
+		return document.evaluate(
+			xpath,
+			document,
+			null,
+			XPathResult.FIRST_ORDERED_NODE_TYPE,
+			null
+		).singleNodeValue;
+	}
+
+	function _getXPath(element) {
+		if (!(element instanceof Element))
+			return null;
+
+		const parts = [];
+
+		while (element && element.nodeType === Node.ELEMENT_NODE) {
+			let index = 1;
+			let sibling = element.previousElementSibling;
+
+			while (sibling) {
+				if (sibling.nodeName === element.nodeName)
+					index++;
+
+				sibling = sibling.previousElementSibling;
+			}
+
+			const tagName = element.nodeName.toLowerCase();
+			const part = `${tagName}[${index}]`;
+
+			parts.unshift(part);
+			element = element.parentNode;
 		}
 
-		const children = Array.from(node.childNodes)
-			.map(parseNode)
-			.flat()
-			.filter(Boolean); // Remove nulos
-
-		return createElement(tag, props, ...children);
+		return `/${parts.join('/')}`;
 	}
 }
 
-function render(container, component) {
-	container.innerHTML = ''; // Limpa o container
-	container.appendChild(component); // Adiciona o componente ao container
+function css(element, style = {}) {
+	const pxProps = new Set([
+		'borderBottomLeftRadius',
+		'borderBottomRightRadius',
+		'borderBottomWidth',
+		'borderLeftWidth',
+		'borderRadius',
+		'borderRightWidth',
+		'borderTopLeftRadius',
+		'borderTopRightRadius',
+		'borderTopWidth',
+		'borderWidth',
+		'bottom',
+		'columnGap',
+		'fontSize',
+		'gap',
+		'height',
+		'left',
+		'letterSpacing',
+		'lineHeight',
+		'margin',
+		'marginBottom',
+		'marginLeft',
+		'marginRight',
+		'marginTop',
+		'maxHeight',
+		'maxWidth',
+		'minHeight',
+		'minWidth',
+		'outlineWidth',
+		'padding',
+		'paddingBottom',
+		'paddingLeft',
+		'paddingRight',
+		'paddingTop',
+		'right',
+		'rowGap',
+		'top',
+		'translateX',
+		'translateY',
+		'translateZ',
+		'width',
+	]);
+
+	const processedStyle = {};
+
+	for (const [prop, value] of Object.entries(style)) {
+		// Se o valor for um número, adiciona 'px' no final
+		if (pxProps.has(prop) && typeof value == 'number') {
+			processedStyle[prop] = `${value}px`;
+		} else {
+			processedStyle[prop] = value;
+		}
+	}
+
+	Object.assign(element.style, processedStyle);
 }
 
-export { html, render };
+
+// INTERNO
+
+function _setHtmlStyle() {
+	if (document.querySelector('style#html-style'))
+		return;
+
+	document.querySelector('head').appendChild(html`
+		<style id="html-style">
+			.disabled {
+				opacity: .6;
+				-webkit-user-select: none;
+				-moz-user-select: none;
+				user-select: none;
+				pointer-events: none;
+			}
+		</style>
+	`);
+}
