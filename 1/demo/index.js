@@ -122,7 +122,7 @@ const comp1 = html`
 	</div>
 `;
 
-// CSS - Exemplo de uso
+// CSS - Exemplo de uso (Obs.: as propriedades são redefinidas no reload())
 comp1.querySelectorAll('button')[3].css({ color: 'red' }); // Para elementos gerados pela lib
 select.css({ color: 'blue' });
 css(comp1.querySelector('h1'), { color: 'blue' }); // Para qualquer elemento

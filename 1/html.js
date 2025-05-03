@@ -1,3 +1,5 @@
+// Criado por Janderson Costa em 05/2025.
+
 export { html, css };
 
 _setHtmlStyle();
