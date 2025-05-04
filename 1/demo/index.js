@@ -115,9 +115,11 @@ const comp1 = html`
 				</label>
 			`)}
 
-			${() => list.map((item, index) => html`
-				<li>${(index + 1) + ' - ' + item}</li>
-			`)}
+			<ul>
+				${() => list.map((item, index) => html`
+					<li>${(index + 1) + ' - ' + item}</li>
+				`)}
+			</ul>
 		</div>
 	</div>
 `;
