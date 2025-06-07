@@ -1,6 +1,10 @@
 // Criado por Janderson Costa em 05/2025.
 
-export { html, css };
+const onHtml = {
+	Reload: null,
+};
+
+export { html, css, onHtml };
 
 _setHtmlStyle();
 
@@ -19,7 +23,13 @@ function html(templateString, ...expressions) {
 
 		_component.replaceWith(newComponent);
 		_component = newComponent;
+
 		focus();
+
+		if (onHtml.Reload)
+			onHtml.Reload({ component: newComponent });
+
+		return newComponent;
 	}
 
 	function createComponent() {
@@ -71,7 +81,7 @@ function html(templateString, ...expressions) {
 		return html;
 
 		function compressTemplateString(text) {
-			return typeof text == 'string' ? text.replace(/\n|\t/g, '').trim() : '';
+			return typeof text == 'string' ? text.replace(/\n|\t/g, '') : '';
 		}
 
 		function isElement(any) {
@@ -93,7 +103,8 @@ function html(templateString, ...expressions) {
 		const elements = element.querySelectorAll('element, function');
 
 		elements.forEach(element => {
-			const expression = _expressions[element.textContent];
+			const index = element.textContent;
+			const expression = _expressions[index];
 			const result = element.tagName.toLowerCase() == 'function' ? expression() : expression;
 			const children = result instanceof Array ? result : [result];
 
@@ -127,22 +138,33 @@ function html(templateString, ...expressions) {
 
 					element.addEventListener(_attrName, event => {
 						_xPath = _getXPath(event.target);
-						func({ event, element: event.target, reload });
+						func({ event, element, reload });
 					});
 
 					element.removeAttribute(attrName);
+				}
+
+				// @show
+				if (attrName == '@show') {
+					element.classList[attr.value != 'true' ? 'add' : 'remove']('hidden');
 				}
 			});
 		}
 	}
 
 	function setPublicProperties(element) {
-		element.reload = reload;
-		element.css = style => css(element, style);
+		if (!element.reload)
+			element.reload = reload;
+
+		if (!element.css)
+			element.css = style => css(element, style);
 	}
 
 	function focus() {
 		const element = _getElementByXPath(_xPath);
+
+		if (!element) return;
+
 		const tagName = element.tagName.toLowerCase();
 		const type = element.type;
 
@@ -155,12 +177,12 @@ function html(templateString, ...expressions) {
 
 	// INTERNO
 
-	function _getElementByXPath(xpath) {
-		if (!xpath)
+	function _getElementByXPath(xPath) {
+		if (!xPath)
 			return null;
 
 		return document.evaluate(
-			xpath,
+			xPath,
 			document,
 			null,
 			XPathResult.FIRST_ORDERED_NODE_TYPE,
