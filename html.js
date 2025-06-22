@@ -1,16 +1,12 @@
 // Criado por Janderson Costa em 05/2025.
 
-const onHtml = {
-	Reload: null,
-};
-
-export { html, css, onHtml };
+export { html };
 
 _setHtmlStyle();
 
 function html(templateString, ...expressions) {
-	let _templateString = templateString;
-	let _expressions = expressions;
+	const TEMPLATESTRING = templateString;
+	const EXPRESSIONS = expressions;
 	let _component = createComponent();
 	let _xPath;
 
@@ -26,9 +22,6 @@ function html(templateString, ...expressions) {
 
 		focus();
 
-		if (onHtml.Reload)
-			onHtml.Reload({ component: newComponent });
-
 		return newComponent;
 	}
 
@@ -42,29 +35,26 @@ function html(templateString, ...expressions) {
 	}
 
 	function parseTemplateString() {
-		const htmlParts = _templateString;
+		const htmlParts = TEMPLATESTRING;
 		const html = htmlParts.reduce((acc, cur, i) => {
-			acc = compressTemplateString(acc);
-			cur = compressTemplateString(cur);
+			acc = _compressTemplateString(acc);
+			cur = _compressTemplateString(cur);
 
 			if (i == 0)
 				return cur;
 
 			const index = i - 1;
-			const part = compressTemplateString(htmlParts[index]);
-			const onEventRegex = /@on[a-zA-Z0-9]*="$/; // Termina com @on<eventName>="
+			const part = _compressTemplateString(htmlParts[index]);
+			const eventRegex = /@[a-zA-Z0-9]*="$/; // Termina com @<eventName>=" - Ex.: @onClick=", @onChange=", @show="
 
-			let expression = _expressions[index];
+			let expression = EXPRESSIONS[index];
 			let isFunction = typeof expression == 'function';
 
-			if (isElement(expression)) {
+			if (_isElement(expression)) {
 				expression = `<element>${index}</element>`;
-			} else if (isFunction && (part.endsWith('>') || !onEventRegex.test(part))) {
+			} else if (isFunction && (part.endsWith('>') || !eventRegex.test(part))) {
 				isFunction = false;
-				expression = expression();
-
-				if (isElement(expression))
-					expression = `<function>${index}</function>`;
+				expression = `<function>${index}</function>`;
 			}
 
 			return (acc + (isFunction ? index : expression) + cur)
@@ -79,14 +69,6 @@ function html(templateString, ...expressions) {
 		}, '');
 
 		return html;
-
-		function compressTemplateString(text) {
-			return typeof text == 'string' ? text.replace(/\n|\t/g, '') : '';
-		}
-
-		function isElement(any) {
-			return any instanceof Element || any[0] instanceof Element;
-		}
 	}
 
 	function createElement(html) {
@@ -104,14 +86,17 @@ function html(templateString, ...expressions) {
 
 		elements.forEach(element => {
 			const index = element.textContent;
-			const expression = _expressions[index];
-			const result = element.tagName.toLowerCase() == 'function' ? expression() : expression;
-			const children = result instanceof Array ? result : [result];
+			const expression = EXPRESSIONS[index];
+			const result = typeof expression == 'function' ? expression() : expression;
+			const results = result instanceof Array ? result : [result]; // Element | Value
 
-			children.forEach((child, index) => {
-				element.before(child);
+			if (!results.length)
+				results.push('');
 
-				if (index == children.length - 1)
+			results.forEach((result, index) => {
+				element.before(result);
+
+				if (index == results.length - 1)
 					element.remove();
 			});
 		});
@@ -130,23 +115,26 @@ function html(templateString, ...expressions) {
 
 			Array.from(element.attributes).forEach(attr => {
 				const attrName = attr.name.toLowerCase();
+				const expression = EXPRESSIONS[attr.value];
 
 				// @onEvent
 				if (attrName.startsWith('@on')) {
-					const func = _expressions[attr.value];
 					const _attrName = attrName.substring(3);
 
 					element.addEventListener(_attrName, event => {
 						_xPath = _getXPath(event.target);
-						func({ event, element, reload });
+						expression({ event, element, reload });
 					});
 
-					element.removeAttribute(attrName);
+					element.removeAttribute(attrName); // Necessário para evitar novas execuções a partir de outras instâncias de html()
 				}
 
 				// @show
 				if (attrName == '@show') {
-					element.classList[attr.value != 'true' ? 'add' : 'remove']('hidden');
+					let show = typeof expression == 'function' ? expression() : attr.value == 'true';
+
+					element.classList[show ? 'remove' : 'add']('html-hidden');
+					element.removeAttribute(attrName); // Necessário para evitar novas execuções a partir de outras instâncias de html()
 				}
 			});
 		}
@@ -155,9 +143,6 @@ function html(templateString, ...expressions) {
 	function setPublicProperties(element) {
 		if (!element.reload)
 			element.reload = reload;
-
-		if (!element.css)
-			element.css = style => css(element, style);
 	}
 
 	function focus() {
@@ -176,6 +161,14 @@ function html(templateString, ...expressions) {
 
 
 	// INTERNO
+
+	function _isElement(any) {
+		return any instanceof Element || any[0] instanceof Element;
+	}
+
+	function _compressTemplateString(text) {
+		return typeof text == 'string' ? text.replace(/\n|\t/g, '') : ''; // Não usar trim()
+	}
 
 	function _getElementByXPath(xPath) {
 		if (!xPath)
@@ -218,64 +211,6 @@ function html(templateString, ...expressions) {
 	}
 }
 
-function css(element, style = {}) {
-	const pxProps = new Set([
-		'borderBottomLeftRadius',
-		'borderBottomRightRadius',
-		'borderBottomWidth',
-		'borderLeftWidth',
-		'borderRadius',
-		'borderRightWidth',
-		'borderTopLeftRadius',
-		'borderTopRightRadius',
-		'borderTopWidth',
-		'borderWidth',
-		'bottom',
-		'columnGap',
-		'fontSize',
-		'gap',
-		'height',
-		'left',
-		'letterSpacing',
-		'lineHeight',
-		'margin',
-		'marginBottom',
-		'marginLeft',
-		'marginRight',
-		'marginTop',
-		'maxHeight',
-		'maxWidth',
-		'minHeight',
-		'minWidth',
-		'outlineWidth',
-		'padding',
-		'paddingBottom',
-		'paddingLeft',
-		'paddingRight',
-		'paddingTop',
-		'right',
-		'rowGap',
-		'top',
-		'translateX',
-		'translateY',
-		'translateZ',
-		'width',
-	]);
-
-	const processedStyle = {};
-
-	for (const [prop, value] of Object.entries(style)) {
-		// Se o valor for um número, adiciona 'px' no final
-		if (pxProps.has(prop) && typeof value == 'number') {
-			processedStyle[prop] = `${value}px`;
-		} else {
-			processedStyle[prop] = value;
-		}
-	}
-
-	Object.assign(element.style, processedStyle);
-}
-
 
 // INTERNO
 
@@ -285,7 +220,11 @@ function _setHtmlStyle() {
 
 	document.querySelector('head').appendChild(html`
 		<style id="html-style">
-			.disabled {
+			.html-hidden {
+				display: none;
+			}
+
+			.html-disabled {
 				opacity: .6;
 				-webkit-user-select: none;
 				-moz-user-select: none;
